@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Estelle Rivaud - TPjQuery - Ajax : Version 3</title>
+    <meta charset="utf-8">
+    <script src="./jquery-3.3.1.js" type="text/javascript"></script>
+    <link rel="stylesheet" type="text/css" href="css/normalize.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="css/Style.css">
+    <style type="text/css"></style>
+</head>
+
+<body>
+    <div class="container">
+
+        <div id="formCreate">
+            <input id="create_username" placeholder="Nom d'utilisateur" />
+            <input id="create_password" type="password" placeholder="Votre mot de passe" />
+            <!-- appel de la fonction qui permet de créer le compte sur le click du bouton de formulaire -->
+            <button class="todoBtn" onclick="createAccount('#create_username', '#create_password')">Créer compte</button>
+        </div>
+        <div id="account_created">
+
+        </div>
+
+        <div id="formConnect">
+            <input id="connect_username" placeholder="Nom d'utilisateur" />
+            <input id="connect_password" placeholder="Votre mot de passe" />
+            <!-- appel de la fonction qui permet de se connecter au compte sur le click du bouton de formulaire -->
+            <button class="todoBtn" onclick="seConnecter('#connect_username', '#connect_password')">Se Connecter</button>
+        </div>
+        <div class="todo">
+
+        </div>
+    </div>
+</body>
+<script>
+    $(document).ready(function () {
+    }); // sera éxécuté quand la page HTML sera chargée
+    var listes = {}; // objet qui me servira à stocker les résultats de requête Ajax
+
+    function getIDs(idUsernameInput, idPasswordInput) { // fonction qui sert à récupérer dans un tableau le couple ID/pwd
+        var theIDs = [$(idUsernameInput).val(), $(idPasswordInput).val()];
+        return theIDs; //on retourne le tableau avec les deux valeurs récupérées
+    }
+
+    function createAccount(idUsernameInput, idPasswordInput) { // fonction qui sert à créer le compte
+        var newIDs = [];
+        newIDs = getIDs(idUsernameInput, idPasswordInput);
+        $.ajax({ // requête ajax de création de compte utilisateur
+            type: "get", // requête de type get
+            url: "http://92.222.69.104/todo/create/" + newIDs[0] + "/" + newIDs[1]    // url avec passage de paramètres 
+        }).done(function (data) {
+            console.log(data); // affichage de contrôle du résultat de la requête dans la console.
+            $("#formCreate").hide(); // on masque le formulaire de création de compte
+            $("#account_created").html("<p>Votre compte a bien été créé, <br/>identifiant : " + newIDs[0] + ", <br/>mot de passe : " + newIDs[1] + ".</p>"); // et on affiche un message pour dire que la création a bien fontionné avec rappel identifiant et mot de passe (ne se fait pas en pratique...)
+        });
+    };
+
+    function seConnecter(idUsernameInput, idPasswordInput) {
+        $("#formCreate").hide(); // on masque le formulaire de création de compte le cas échéant
+        $("#account_created").hide(); // on masque le résultat du formulaire de création de compte le cas échéant
+        $("#formConnect").hide(); // on masque le formulaire de création de compte
+
+        listes.sessionIDs = getIDs(idUsernameInput, idPasswordInput); //
+        $.ajax({
+            type: "get",
+            url: "http://92.222.69.104:80/todo/listes/",
+            headers: { "login": listes.sessionIDs[0], "password": listes.sessionIDs[1] }
+        }).done(function (data) { // fin de la requête Ajax de GET et début des instructions à effectuer quand la requête répond
+            if (data && data.todoListes) //si la requête Ajax retourne bien un résultat data :
+            {
+                listes.data = data; // stocker ce résultat dans la variable listes
+                // Puis contruction et remplissage du HTMl permettant d'afficher la liste récupérée en GET
+                showList(data);
+            }
+        });  // fin des actions à accomplir quand la requête Ajax a répondu
+
+        // ci-dessous : utilisation d'un .on("click", ...) pour effectuer une action sur un évènement ayant lieu sur un objet HTML généré par du jquery
+        // getInputAndPost();
+        //addNewList(listes);
+        renameItem(listes);
+        deleteItem(listes);
+    };
+
+    function createAddingForm(index) {
+        // Ajout des champs permettant d'ajouter un élément à l'une des listes (un champ par liste)
+        var inputField = $("<input type='text' placeholder='Nouvel élément' class='form-control'></input>"); // champ de saisie stocké dans une variable
+        var addButton = $("<button type='button' data-list='" + index + "' class='add-item todoBtn'>Ajouter</button >"); // bouton de validation identifié par un index et stocké dans une variable
+        var inputsContainer = $("<div></div>").append(inputField).append(addButton); //construction HTML 
+        return inputsContainer;
+    };
+
+    function showList(data) {
+        $(".todo").append("<div class='containerListes'></div>");
+        data.todoListes.forEach(function (todoList, index) { //pour chaque élément de la liste de premier niveau
+            var listContainer = $("<div class='" + index + "Liste'></div>"); // on crée un élément HTML de type DIV qu'on stocke dans une variable nommée listContainer
+            var listTitle = $("<h2 class='titreListe'></h2>").text(todoList.name); // et le titre de la liste dans un H2 stocké dans une variable nommée listTitle
+            listContainer.append(listTitle); //on injecte cette deuxième variable dans la première : listContainer
+            var items; // variable qui servira à stocker les sous-éléments de chaque liste de 1er niveau
+            var motherListID = index; // variable qui sert à identifier la liste mère dans les ID des li du forEach suivant (évite les bugs de la fonction renameItem)
+            if (todoList.elements && todoList.elements.length > 0) { // s'il existe des sous-éléments dans la liste de niveau 1 qu'on est en train de parcourir
+                var itemsContainer = $("<ul></ul>"); //on crée une variable itemsContainer pour stocker un élément HTML de type <ul>
+                todoList.elements.forEach(function (element, index) {//et pour chaque sous-élément
+                    var element = $("<li id='" + index + "item" + motherListID + "' class=' listElement'></li>").text(element)// on stocke l'intitulé du sous-élément dans un <li> dans une variable nommée element
+                    element = element.append("<span class='edition'><i id='" + index + "fas" + motherListID + "' class='fas fa-pencil-alt replace'></i><i id='" + index + "delete" + motherListID + "' class='fas fa-trash-alt deleteItem'></i></span");
+                    itemsContainer.append(element); // on assemble chaque sous-élément de liste dans la variable itemsContainer 
+                });
+                listContainer.append(itemsContainer); // et chaque liste de sous-éléments dans la liste de niveau 1 en cours.
+            } // à la sortie de cette boucle une liste data est construite en HTML et affichable
+
+            var inputsContainer = createAddingForm(index); // appel de la fonction qui ajouter un champ de formulaire
+            listContainer.append(inputsContainer); // ajout de la partie formulaire à chaque sous-liste
+            $(".containerListes").append(listContainer);
+        });
+        $(".containerListes").append("<button id='addMotherList'>Ou créer une nouvelle Liste</button>");
+    };
+
+    // execute la requête ajax post et réaffiche la liste
+    function postIt(theDatas) {
+        $.ajax({
+            type: "POST", // requête de type post pour pouvoir modifier ce qui est présent sur le server
+            url: "http://92.222.69.104:80/todo/listes/",
+            data: JSON.stringify(theDatas), //on formate et remplace sur le serveur la liste
+            headers: { "Content-Type": "application/json" }
+        }).done(function (data) {
+            $(".containerListes").replaceWith(showList(data));
+            //clickedButton.closest('div').siblings('ul').append('<li class="item">' + item + '</li>');
+            //addItemInput.val(''); //on injecte la valeur récupérée dans la variable item au bon endroit dans le HTML en repartant de la position du bouton cliqué et en remontant dans l'arbre HTML
+        });
+    };
+
+    //   function getInputAndPost() {
+    $(".todo").on("click", ".add-item", (event) => { // syntaxe équivalente à : function(event) {}; (proposée automatiquement par mon IDE)
+        var clickedButton = $(event.target); //récupération de l'occurence du bouton d'ajout à la liste qui a été cliqué
+        var listeId = clickedButton.data('list'); //récupération de l'id de la liste dans laquelle ce bouton cliqué est
+        var addItemInput = clickedButton.prev("input"); // récupération de l'occurence de l'input visé par le click du bouton
+        var item = addItemInput.val(); // récupération dans la variable item de la valeur saisie par l'utilisateur dans l'input
+        listes.data.todoListes[listeId].elements.push(item); // ajout par la fonction push de la valeur récupérée dans item à la liste correspondant à celle à laquelle on veut l'ajouter dans la variable listes
+        postIt(listes.data);
+    });
+    //     };
+    //addNewList(listes){
+        $(".todo").on("click", "#addMotherList", (event) => {
+            $("#addMotherList").replaceWith("<input id='inputNewList'/><br /><button id='btnaddMotherList'>Enregistrer</button>");
+            $("#btnaddMotherList").on("click", (event) => {
+                var newListItem = {};
+                newListItem.name = $("#inputNewList").val();
+                newListItem.elements = [];
+                console.log("new List item : "+newListItem)
+                listes.data.todoListes.push(newListItem);
+                console.log(listes);
+                postIt(listes.data); //on la poste sur le serveur
+            })
+            
+        });
+    //}
+
+    function renameItem(theDatas) {
+        $(".todo").on("click", ".replace", (event) => {//quand on clique sur un objet de la classe .replace
+            var clickedItem = $(event.target).attr('id'); //on récupère la valueur de l'ID de cet objet
+            $("#"+clickedItem).closest("li").replaceWith("<li id='theChangedOne'><input id='input"+clickedItem+"' /><button id='button"+clickedItem+"'>Modifier</button></li>"); //On remplace par un champ de formulaire avec un bouton
+            $("#button"+clickedItem).on("click", (event) => {//quand on clique sur le bouton
+                var changedItem = $("#input"+clickedItem).val(); // récupération dans la variable item de la valeur saisie par l'utilisateur dans l'input 
+                var indexSubListe = clickedItem.substring(0,1);
+                var motherListID = $("#theChangedOne").closest('div').attr('class').substring(0,1);
+                console.log("nouvelle valeur : "+changedItem +", pour l'item : "+clickedItem+" dans la liste mère ID n°: "+motherListID); //juste pour remonter dans la console la valeur qu'on a changé et où
+                
+                motherListID = Number(motherListID); //on parse de String en Number ParseInt pourrait aussi convenir
+                indexSubListe = Number(indexSubListe); //on parse de String en Number
+                theDatas.data.todoListes[motherListID].elements[indexSubListe] = changedItem; //on change la valeur de l'enregistrement dans la liste
+                postIt(theDatas.data); //on la poste sur le serveur
+                renameItem(theDatas); // on relance l'écoute d'évènement
+                });  
+        }); 
+    };
+
+        function deleteItem(theDatas) {
+        $(".todo").on("click", ".deleteItem", (event) => {//quand on clique sur un objet de la classe .deleteItem
+            var clickedItem = $(event.target).attr('id'); //on récupère la valueur de l'ID de cet objet
+            var indexSubListe = clickedItem.substring(0,1);
+            var motherListID = $("#"+clickedItem).closest('div').attr('class').substring(0,1);
+            console.log("demande de suppression de l'item : "+indexSubListe+" dans la liste mère ID n°: "+motherListID); //juste pour remonter dans la console la valeur qu'on a changé et où
+            //quand on clique sur la poubelle
+                if(confirm("Êtes vous sûr(e) de vouloir supprimer cet item ?")){
+                    motherListID = Number(motherListID); //on parse de String en Number
+                    indexSubListe = Number(indexSubListe); //on parse de String en Number
+                    console.log("élément qui sera supprimé : "+theDatas.data.todoListes[motherListID].elements.splice(indexSubListe, 1));
+                    theDatas.data.todoListes[motherListID].elements.splice(indexSubListe, 1);//on supprime 1 élément de la liste au bon endroit
+                    postIt(theDatas.data); //on la poste sur le serveur
+                    deleteItem(theDatas); // on relance l'outil
+                }
+                else{ 
+                    console.log("Rien n'a été supprimé");
+                    }
+               
+        }); 
+    };
+
+
+//guillaume.artignan@gmail.com 
+// deadline avant le 22 novembre
+//envoyer un .ZIP renommé en .PDF <NUMERO_NOM_PRENOM.pdf>
+//on peut envoyer un dropbox ou un wetransfer
+
+</script>
+
+</html>
