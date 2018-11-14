@@ -159,8 +159,10 @@
 
     function renameItem(theDatas) {
         $(".todo").on("click", ".replace", (event) => {//quand on clique sur un objet de la classe .replace
-            var clickedItem = $(event.target).attr('id'); //on récupère la valueur de l'ID de cet objet
-            $("#"+clickedItem).closest("li").replaceWith("<li id='theChangedOne'><input id='input"+clickedItem+"' /><button id='button"+clickedItem+"'>Modifier</button></li>"); //On remplace par un champ de formulaire avec un bouton
+            var clickedItem = $(event.target).attr('id'); //on récupère la valeur de l'ID de cet objet
+            var editedValue = $("#"+clickedItem).closest("li").text(); //on récupère le contenur du li
+            console.log("l'element cliqué : "+editedValue);
+            $("#"+clickedItem).closest("li").replaceWith("<li id='theChangedOne'><input id='input"+clickedItem+"' value='"+editedValue+" class='form-control' /><button id='button"+clickedItem+"' class='todoBtn'>Modifier</button></li>"); //On remplace par un champ de formulaire avec un bouton
             $("#button"+clickedItem).on("click", (event) => {//quand on clique sur le bouton
                 var changedItem = $("#input"+clickedItem).val(); // récupération dans la variable item de la valeur saisie par l'utilisateur dans l'input 
                 var indexSubListe = clickedItem.substring(0,1);
