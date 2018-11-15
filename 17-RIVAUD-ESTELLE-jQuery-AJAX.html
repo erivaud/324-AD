@@ -103,7 +103,7 @@
             if (todoList.elements && todoList.elements.length > 0) { // s'il existe des sous-éléments dans la liste de niveau 1 qu'on est en train de parcourir
                 var itemsContainer = $("<ul></ul>"); //on crée une variable itemsContainer pour stocker un élément HTML de type <ul>
                 todoList.elements.forEach(function (element, index) {//et pour chaque sous-élément
-                    var element = $("<li id='" + index + "item" + motherListID + "' class=' listElement'></li>").text(element)// on stocke l'intitulé du sous-élément dans un <li> dans une variable nommée element
+                    var element = $("<li id='" + index + "item" + motherListID + "' class='listElement'></li>").text(element)// on stocke l'intitulé du sous-élément dans un <li> dans une variable nommée element
                     element = element.append("<span class='edition'><i id='" + index + "fas" + motherListID + "' class='fas fa-pencil-alt replace'></i><i id='" + index + "delete" + motherListID + "' class='fas fa-trash-alt deleteItem'></i></span");
                     itemsContainer.append(element); // on assemble chaque sous-élément de liste dans la variable itemsContainer 
                 });
@@ -162,7 +162,7 @@
             var clickedItem = $(event.target).attr('id'); //on récupère la valeur de l'ID de cet objet
             var editedValue = $("#"+clickedItem).closest("li").text(); //on récupère le contenur du li
             console.log("l'element cliqué : "+editedValue);
-            $("#"+clickedItem).closest("li").replaceWith("<li id='theChangedOne'><input id='input"+clickedItem+"' value='"+editedValue+" class='form-control' /><button id='button"+clickedItem+"' class='todoBtn'>Modifier</button></li>"); //On remplace par un champ de formulaire avec un bouton
+            $("#"+clickedItem).closest("li").replaceWith("<li id='theChangedOne'><input id='input"+clickedItem+"' value='"+editedValue+"' class='form-control' /><button id='button"+clickedItem+"' class='todoBtn'>Modifier</button></li>"); //On remplace par un champ de formulaire avec un bouton
             $("#button"+clickedItem).on("click", (event) => {//quand on clique sur le bouton
                 var changedItem = $("#input"+clickedItem).val(); // récupération dans la variable item de la valeur saisie par l'utilisateur dans l'input 
                 var indexSubListe = clickedItem.substring(0,1);
